@@ -2,56 +2,122 @@
 #include "Element.h"
 #include "PeriodicTable.h"
 #include<iostream>
+#include<cassert>
+#include<chrono>
 #include<string>
 
 
 using namespace std;
 using namespace elemental_composition;
 
-int main() {
-	ElementalComposition::initialize_periodic_table();
+int initialization_test() {
 	ElementalComposition composition = ElementalComposition();
 	ElementalComposition test_obj, test_obj2;
 	Element elem_obj;
 	string element = "O";
-	int done;
 
 	composition[element] = 2;
-	composition["H"] = 5;
-	cout << composition["H"] << " " << composition[element] << " Done" << endl;
-	cout << composition["S"] << endl;
-	cout << composition << endl;
+	composition[{"H", 0}] = 5;
+	assert(composition["H"] == 5);
+	assert(composition["S"] == 0);
 	ElementalComposition dup = (composition + composition) * 3;
-	cout << dup << endl;
 	composition += dup;
-	cout << composition << endl;
-	cout << composition << endl;
-	cout << composition.mass() << endl;
+	assert(abs(composition.mass() - 259.203) < 1e-3);
 	composition = ElementalComposition({ { "O", 6 },{ "H", 12 },{ "C", 6 } });
-	cout << composition << endl;
-	cout << composition["O"] << endl;
+	assert(composition["O"] == 6);
+	assert(abs(composition.mass() - 180.063) < 1e-3);
 	initializer_list< pair<element_t, int> > type_thing = { { "O", 6 },{ "H", 12 },{ "C", 6 } };
+	// alternative initialization
+	assert(composition == type_thing);
+	// arithmetic operations
 	ElementalComposition added = composition + type_thing;
-	cout << (composition + type_thing) - ElementalComposition({ { "O", 6 }, { "H", 12 }, { "C", 6 } }) << endl;
-	cout << composition << endl << composition.mass() << endl;
+	assert(added == composition * 2);
+	assert(
+		(composition + type_thing) - ElementalComposition(
+			{ { "O", 6 },{ "H", 12 },{ "C", 6 } }) == composition);
 	test_obj = ElementalComposition(composition);
 	test_obj = composition + composition;
 	test_obj2 = composition * 2;
-	cout << "Comparison " << (test_obj == test_obj2) << endl;
+	assert(test_obj == test_obj2);
 
-	test_obj = ElementalComposition(composition);
-	test_obj += test_obj;
-	cout << test_obj << endl;
-	cout << "Comparison " << (test_obj == test_obj2) << endl;
+	return 0;
+}
 
+int negation_test() {
+	ElementalComposition composition = parse_formula("C6H12O6");
+	composition = -composition;
+	assert(composition["O"] == -6);
+	return 0;
+}
+
+int formula_parse_test() {
+	ElementalComposition test_obj;
+	ElementalComposition ref({ {"C", 6}, {"H", 12}, {"O", 6} });
+	test_obj = parse_formula("C6H12O6");
+	assert(test_obj == ref);
+	assert(test_obj.formula() == "C6H12O6");
+	test_obj = parse_formula("C4C[13]2(H2O)2");
+	ref = ElementalComposition({ {"C", 4}, {{"C", 13}, 2}, {"H", 4}, {"O", 2} });
+	assert(test_obj == ref);
+	return 0;
+}
+
+int element_specifier_test() {
 	ElementSpecifier spec = ElementSpecifier();
 	parse_isotope_string("C[13]", spec);
-	cout << spec.element << " " << spec.isotope << endl;
-	cout << spec << endl;
-	cout << (std::string)spec << endl;
+	assert(spec.element == "C");
+	assert(spec.isotope == 13);
+	assert((std::string)spec == "C[13]");
+	parse_isotope_string("O", spec);
+	assert(spec.element == "O");
+	assert(spec.isotope == 0);
+	assert((std::string)spec == "O");
+	return 0;
+}
 
-	test_obj = parse_formula("C6H12O6");
-	cout << "Parsed " << test_obj << endl;
-	cout << parse_formula("C4C[13]2(H2O)2") << endl;
+int perf_test() {
+	ElementalComposition::initialize_periodic_table();
+	ElementalComposition composition = ElementalComposition();
+	Element elem_obj;
+	string element = "O";
+
+	composition[element] = 2;
+	composition[{"H", 0}] = 5;
+	auto upper_limit = std::pow(2, 20) - 1;
+	auto clock = std::chrono::steady_clock();
+	auto start = clock.now();
+	for (std::size_t i = 0; i < upper_limit; i++) {
+		bool t = composition[{"H", 0}] == 5;
+		assert(t);
+	}
+	auto end = clock.now();
+	auto diff = std::chrono::duration<double>(end - start);
+	cout << "Fully specified " << diff.count() << " s (" <<  (
+		diff.count() / upper_limit) << " s per)" << endl;
+
+	start = clock.now();
+	for (std::size_t i = 0; i < upper_limit; i++) {
+		bool t = composition["H"] == 5;
+		assert(t);
+	}
+	end = clock.now();
+	diff = std::chrono::duration<double>(end - start);
+	cout << "Parsing " << diff.count() << " s (" << (
+		diff.count() / upper_limit) << " s per)" << endl;
+
+	return 0;
+}
+
+int main() {
+	int done;
+	cout << "Running Elemental Composition Tests" << endl;
+	ElementalComposition::initialize_periodic_table();
+	initialization_test();
+	negation_test();
+	//perf_test();
+	element_specifier_test();
+	formula_parse_test();
+	cout << "Testing Finished" << endl;
 	cin >> done;
+	return 0;
 }

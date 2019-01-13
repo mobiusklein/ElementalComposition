@@ -96,11 +96,11 @@ namespace elemental_composition {
 			return isotopes.monoisotopic.mass;
 		}
 
-		inline string get_symbol() const {
+		string get_symbol() const {
 			return symbol;
 		}
 
-		inline void set_symbol(string sym) {
+		void set_symbol(string sym) {
 			symbol = sym;
 		}
 
@@ -126,7 +126,6 @@ namespace elemental_composition {
 }
 
 namespace std {
-	
 	template<> struct hash<elemental_composition::ElementSpecifier>
 	{
 		typedef elemental_composition::ElementSpecifier argument_type;
@@ -136,6 +135,17 @@ namespace std {
 			result_type const h1(hash<string>{}(s.element));
 			result_type const h2(hash<int>{}(s.isotope));
 			return h1 ^ (h2 << 1);
+		}
+	};
+
+	template<> struct hash<elemental_composition::Element>
+	{
+		typedef elemental_composition::Element argument_type;
+		typedef size_t result_type;
+		result_type operator()(argument_type const& s) const noexcept
+		{
+			result_type const h1(hash<string>{}(s.get_symbol()));
+			return h1;
 		}
 	};
 }

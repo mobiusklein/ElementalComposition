@@ -2,7 +2,9 @@
 #include "PeriodicTable.h"
 #include<iterator>
 #include<memory>
-
+#include<sstream>
+#include<algorithm>
+#include<vector>
 
 namespace elemental_composition {
 	ElementalComposition::ElementalComposition()
@@ -25,7 +27,7 @@ namespace elemental_composition {
 	}
 
 	ElementalComposition::ElementalComposition(ElementalComposition&& composition) {
-		element_count = composition.element_count;
+		element_count = std::move(composition.element_count);
 	}
 
 	ElementalComposition::ElementalComposition(const element_count_initializer_t initializer) {
@@ -58,11 +60,21 @@ namespace elemental_composition {
 		return element_count[element];
 	}
 
-	count_t& ElementalComposition::operator[](const char element[]) {
-		return (*this)[ElementSpecifier(string(element))];
+	count_t& ElementalComposition::operator[](const Element& element) {
+		return (*this)[ElementSpecifier(element.get_symbol(), 0)];
 	}
 
-	count_t& ElementalComposition::operator[](const Element& element) {
+	count_t ElementalComposition::operator[](const element_t element) const{
+		auto count = element_count.find(element);
+		if (count == element_count.cend()) {
+			return 0;
+		}
+		else {
+			return count->second;
+		}
+	}
+
+	count_t ElementalComposition::operator[](const Element& element) const{
 		return (*this)[ElementSpecifier(element.get_symbol(), 0)];
 	}
 
@@ -114,6 +126,14 @@ namespace elemental_composition {
 		return copy;
 	}
 
+	ElementalComposition ElementalComposition::operator-() const {
+		ElementalComposition copy;
+		for (const auto& iter : *this) {
+			copy[iter.first] = -iter.second;
+		}
+		return copy;
+	}
+
 	ElementalComposition& ElementalComposition::operator+=(const ElementalComposition& other) {
 		ElementalComposition& ref = *this;
 		for (const auto &iter : other) {
@@ -145,6 +165,9 @@ namespace elemental_composition {
 	PeriodicTablePtr ElementalComposition::periodic_table = nullptr;
 
 	double ElementalComposition::mass() const{
+		if (ElementalComposition::periodic_table == nullptr) {
+			ElementalComposition::initialize_periodic_table();
+		}
 		return mass(*ElementalComposition::periodic_table);
 	}
 
@@ -284,5 +307,21 @@ namespace elemental_composition {
 			}
 		}
 		return result;
+	}
+
+	std::string ElementalComposition::formula() const {
+		std::stringstream ss;
+		std::vector<element_t> ordered;
+		ordered.reserve(size());
+		for (auto& pair_iter : *this) {
+			ordered.emplace_back(pair_iter.first);
+		}
+		std::sort(ordered.begin(), ordered.end(), [](const auto& a, const auto& b) {
+			return (a.element < b.element) && (a.isotope <= b.isotope);
+		});
+		for (const auto& iter : ordered) {
+			ss << (std::string)iter << (*this)[iter];
+		}
+		return ss.str();
 	}
 }

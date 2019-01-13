@@ -2,6 +2,7 @@
 #include "PeriodicTable.h"
 #include <utility>
 #include <vector>
+#include <sstream>
 
 
 
@@ -121,10 +122,9 @@ namespace elemental_composition {
 	ElementSpecifier::~ElementSpecifier() {}
 
 	int parse_isotope_string(string isotope_string, ElementSpecifier& spec) {
-		size_t n = isotope_string.size();
 		string element = "";
 		bool has_isotope = false;
-		string isotope_part = "";
+		string isotope_part;
 		for (auto c : isotope_string) {
 			if (c == '[') {
 				has_isotope = true;

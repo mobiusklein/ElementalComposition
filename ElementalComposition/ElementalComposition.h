@@ -30,8 +30,10 @@ namespace elemental_composition {
 		~ElementalComposition();
 
 		count_t& operator[](const element_t element);
-		count_t& operator[](const char[]);
 		count_t& operator[](const Element&);
+
+		count_t operator[](const element_t element) const;
+		count_t operator[](const Element&) const;
 
 		element_count_t::iterator begin();
 		element_count_t::iterator end();
@@ -43,9 +45,12 @@ namespace elemental_composition {
 
 		bool operator==(const ElementalComposition&) const;
 		bool operator!=(const ElementalComposition&) const;
+		
 		ElementalComposition operator+(const ElementalComposition&) const;
 		ElementalComposition operator-(const ElementalComposition&) const;
 		ElementalComposition operator*(const int) const;
+		ElementalComposition operator-() const;
+
 		ElementalComposition& operator=(ElementalComposition&);
 		ElementalComposition& operator+=(const ElementalComposition&);
 		ElementalComposition& operator-=(const ElementalComposition&);
@@ -56,6 +61,8 @@ namespace elemental_composition {
 		size_t size() const;
 
 		friend std::ostream& operator<< (std::ostream& stream, const ElementalComposition& composition);
+
+		std::string formula() const;
 
 		static void initialize_periodic_table() {
 			ElementalComposition::periodic_table = PeriodicTable::make_table_static();
