@@ -83,6 +83,7 @@ int perf_test() {
 
 	composition[element] = 2;
 	composition[{"H", 0}] = 5;
+	cout << "Element Resolution" << endl;
 	auto upper_limit = std::pow(2, 20) - 1;
 	auto clock = std::chrono::steady_clock();
 	auto start = clock.now();
@@ -92,7 +93,7 @@ int perf_test() {
 	}
 	auto end = clock.now();
 	auto diff = std::chrono::duration<double>(end - start);
-	cout << "Fully specified " << diff.count() << " s (" <<  (
+	cout << "Fully Specified " << diff.count() << " s (" <<  (
 		diff.count() / upper_limit) << " s per)" << endl;
 
 	start = clock.now();
@@ -102,9 +103,56 @@ int perf_test() {
 	}
 	end = clock.now();
 	diff = std::chrono::duration<double>(end - start);
+	cout << "Element Parsing " << diff.count() << " s (" << (
+		diff.count() / upper_limit) << " s per)" << endl;
+
+	cout << "Element Lookup" << endl;
+	PeriodicTable& table = *composition.get_periodic_table();
+	start = clock.now();
+	for (std::size_t i = 0; i < (upper_limit); i++) {
+		elem_obj = table["O"];
+	}
+	end = clock.now();
+	diff = std::chrono::duration<double>(end - start);
+	cout << "Raw lookup " << diff.count() << " s (" << (
+		diff.count() / upper_limit) << " s per)" << endl;
+
+	start = clock.now();
+	for (std::size_t i = 0; i < (upper_limit); i++) {
+		table.get_element("O", elem_obj);
+	}
+	end = clock.now();
+	diff = std::chrono::duration<double>(end - start);
+	cout << "Status code " << diff.count() << " s (" << (
+		diff.count() / upper_limit) << " s per)" << endl;
+
+	double time_to_look_up = diff.count() / upper_limit;
+
+	upper_limit /= 10;
+
+	cout << "Formula Parsing" << endl;
+	start = clock.now();
+	for (std::size_t i = 0; i < upper_limit; i++) {
+		composition = parse_formula("C6H12O6");
+	}	
+	end = clock.now();
+	diff = std::chrono::duration<double>(end - start);
 	cout << "Parsing " << diff.count() << " s (" << (
 		diff.count() / upper_limit) << " s per)" << endl;
 
+	cout << "Mass Calculation" << endl;
+	composition = parse_formula("C6H12O6");
+	start = clock.now();
+	for (std::size_t i = 0; i < (upper_limit); i++) {
+		composition.mass();
+	}
+	end = clock.now();
+	diff = std::chrono::duration<double>(end - start);
+	cout << "Massing " << diff.count() << " s (" << (
+		diff.count() / upper_limit) << " s per)" << endl;
+	cout << "Lookup Cost " << time_to_look_up * composition.size() << endl;
+	cout << "Mass Arithmetic " << (diff.count() / upper_limit) - \
+		(time_to_look_up * composition.size()) << endl;
 	return 0;
 }
 
@@ -114,7 +162,7 @@ int main() {
 	ElementalComposition::initialize_periodic_table();
 	initialization_test();
 	negation_test();
-	//perf_test();
+	perf_test();
 	element_specifier_test();
 	formula_parse_test();
 	cout << "Testing Finished" << endl;
